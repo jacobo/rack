@@ -303,8 +303,20 @@ context "Rack::Utils::Multipart" do
   end
 
   specify "should parse mixed binary upload and extract all five parts" do
-    env = Rack::MockRequest.env_for("/", multipart_fixture(:mixed_binary))
+    #Rails sets $KCODE='u' as part of it's initialize_encoding
+    $KCODE='u'
+    
+    env = {}
+    env["CONTENT_LENGTH"] = "1173"
     env["CONTENT_TYPE"] = "multipart/form-data; boundary=----------XnJLe9ZIbbGUYtzPQJ16u1"
+        
+    # env['rack.input'] = StringIO.new(multipartrequestbody)    
+    # env['rack.input'] = StringIO.new(File.read(File.join(File.dirname(__FILE__), "multipart", "mixed_binary")))
+    env['rack.input'] = multipart_fixture(:mixed_binary)[:input]
+    
+    # env = Rack::MockRequest.env_for("/", multipart_fixture(:mixed_binary))
+    # env["CONTENT_TYPE"] = "multipart/form-data; boundary=----------XnJLe9ZIbbGUYtzPQJ16u1"
+    
     params = Rack::Utils::Multipart.parse_multipart(env)
     
     params.keys.should.include('thing_one')
