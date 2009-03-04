@@ -302,6 +302,24 @@ context "Rack::Utils::Multipart" do
     params["files"][:tempfile].read.should.equal "contents"
   end
 
+  specify "should parse mixed binary upload and extract all five parts" do
+    env = Rack::MockRequest.env_for("/", multipart_fixture(:mixed_binary))
+    env["CONTENT_TYPE"] = "multipart/form-data; boundary=----------XnJLe9ZIbbGUYtzPQJ16u1"
+    params = Rack::Utils::Multipart.parse_multipart(env)
+    
+    params.keys.should.include('thing_one')
+    params.keys.should.include('thing_two')
+    params.keys.should.include('thing_three')
+    params.keys.should.include('thing_four')
+    params.keys.should.include('thing_five')
+    
+    params['thing_one'].should.equal "one_1"
+    params['thing_two'][:filename].should.equal "hi_file.ini"
+    params['thing_three'][:filename].should.equal "binaryfile500"
+    params['thing_four'].should.equal "four_44"
+    params['thing_five'].should.equal "fivefive-5"
+  end
+
   specify "rewinds input after parsing upload" do
     options = multipart_fixture(:text)
     input = options[:input]
