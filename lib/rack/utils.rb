@@ -297,7 +297,7 @@ module Rack
           status = input.read(boundary_size)
           raise EOFError, "bad content body"  unless status == boundary + EOL
 
-          rx = /(?:#{EOL})?#{Regexp.quote boundary}(#{EOL}|--)/n
+          rx = /(?:#{EOL})?#{Regexp.quote boundary}(#{EOL}|--)/
 
           loop {
             head = nil
@@ -340,36 +340,25 @@ module Rack
               content_length = -1  if $1 == "--"
             end
 
-            if filename == ""
-              # filename is blank which means no file has been selected
-              data = nil
-            elsif filename
+            if filename
               body.rewind
-
-              # Take the basename of the upload's original filename.
-              # This handles the full Windows paths given by Internet Explorer
-              # (and perhaps other broken user agents) without affecting
-              # those which give the lone filename.
-              filename =~ /^(?:.*[:\\\/])?(.*)/m
-              filename = $1
-
               data = {:filename => filename, :type => content_type,
                       :name => name, :tempfile => body, :head => head}
             else
               data = body
             end
 
-            Utils.normalize_params(params, name, data)
+            if name
+              if name =~ /\[\]\z/
+                params[name] ||= []
+                params[name] << data
+              else
+                params[name] = data
+              end
+            end
 
             break  if buf.empty? || content_length == -1
           }
-
-          begin
-            input.rewind if input.respond_to?(:rewind)
-          rescue Errno::ESPIPE
-            # Handles exceptions raised by input streams that cannot be rewound
-            # such as when using plain CGI under Apache
-          end
 
           params
         end
